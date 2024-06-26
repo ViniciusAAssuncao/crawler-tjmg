@@ -1,0 +1,49 @@
+2024-06-26T06:07:14.514Z INFO: Navegador iniciado
+2024-06-26T06:07:14.792Z INFO: Nova aba aberta
+2024-06-26T06:07:16.151Z INFO: Página carregada
+2024-06-26T06:07:16.752Z INFO: Número do processo inserido
+2024-06-26T06:07:16.899Z INFO: Botão "Pesquisar" clicado
+2024-06-26T06:07:17.471Z INFO: Tabela de resultados carregada
+2024-06-26T06:07:17.645Z INFO: Link "Ver Detalhes" clicado
+2024-06-26T06:07:18.560Z INFO: Nova aba carregada
+2024-06-26T06:07:23.496Z INFO: Navegador fechado
+2024-06-26T06:09:15.139Z INFO: Navegador iniciado
+2024-06-26T06:09:15.673Z INFO: Nova aba aberta
+2024-06-26T06:09:17.858Z INFO: Página carregada
+2024-06-26T06:09:18.436Z INFO: Número do processo inserido
+2024-06-26T06:09:18.672Z INFO: Botão "Pesquisar" clicado
+2024-06-26T06:09:19.189Z INFO: Tabela de resultados carregada
+2024-06-26T06:09:19.314Z INFO: Link "Ver Detalhes" clicado
+2024-06-26T06:09:20.183Z INFO: Nova aba carregada
+2024-06-26T06:09:24.785Z INFO: Navegador fechado
+2024-06-26T06:10:17.844Z INFO: API rodando na porta 3000
+2024-06-26T06:10:23.033Z INFO: Navegador iniciado
+2024-06-26T06:10:23.978Z INFO: Nova aba aberta
+2024-06-26T06:10:25.326Z INFO: Página carregada
+2024-06-26T06:10:25.894Z INFO: Número do processo inserido
+2024-06-26T06:10:26.039Z INFO: Botão "Pesquisar" clicado
+2024-06-26T06:10:26.687Z INFO: Tabela de resultados carregada
+2024-06-26T06:10:26.851Z INFO: Link "Ver Detalhes" clicado
+2024-06-26T06:10:27.719Z INFO: Nova aba carregada
+2024-06-26T06:10:36.541Z INFO: Navegador fechado
+2024-06-26T06:10:36.549Z INFO: ::1 - - [26/Jun/2024:06:10:36 +0000] "GET /process/5044116-91.2023.8.13.0024 HTTP/1.1" 200 6340 "-" "PostmanRuntime/7.39.0"
+2024-06-26T06:10:53.845Z INFO: Navegador iniciado
+2024-06-26T06:10:54.199Z INFO: Nova aba aberta
+2024-06-26T06:10:55.312Z INFO: Página carregada
+2024-06-26T06:10:55.751Z INFO: Número do processo inserido
+2024-06-26T06:10:55.825Z INFO: Botão "Pesquisar" clicado
+2024-06-26T06:10:56.395Z INFO: Tabela de resultados carregada
+2024-06-26T06:10:56.491Z INFO: Link "Ver Detalhes" clicado
+2024-06-26T06:10:57.142Z INFO: Nova aba carregada
+2024-06-26T06:11:02.031Z INFO: Navegador fechado
+2024-06-26T06:11:02.033Z INFO: ::1 - - [26/Jun/2024:06:11:02 +0000] "GET /process/5002739-49.2023.8.13.0604 HTTP/1.1" 200 3834 "-" "PostmanRuntime/7.39.0"
+2024-06-26T06:11:19.482Z INFO: Navegador iniciado
+2024-06-26T06:11:19.777Z INFO: Nova aba aberta
+2024-06-26T06:11:21.074Z INFO: Página carregada
+2024-06-26T06:11:21.408Z INFO: Número do processo inserido
+2024-06-26T06:11:21.473Z INFO: Botão "Pesquisar" clicado
+2024-06-26T06:11:22.661Z INFO: Tabela de resultados carregada
+2024-06-26T06:11:22.783Z INFO: Link "Ver Detalhes" clicado
+2024-06-26T06:11:23.658Z INFO: Nova aba carregada
+2024-06-26T06:11:32.463Z INFO: Navegador fechado
+2024-06-26T06:11:32.465Z INFO: ::1 - - [26/Jun/2024:06:11:32 +0000] "GET /process/5044116-91.2023.8.13.0024 HTTP/1.1" 200 6340 "-" "PostmanRuntime/7.39.0"
