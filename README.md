@@ -59,7 +59,7 @@ A arquitetura do projeto é baseada em uma estrutura modular que separa a lógic
 ### Clone o Repositório
 
 ```bash
-git clone [URL_DO_REPOSITORIO](https://github.com/ViniciusAAssuncao/crawler-tjmg)
+git clone https://github.com/ViniciusAAssuncao/crawler-tjmg
 cd crawler-tjmg
 ```
 
