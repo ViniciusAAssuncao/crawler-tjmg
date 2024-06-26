@@ -241,7 +241,7 @@ describe('API Routes', () => {
     );
     expect(response.status).toBe(200);
     expect(response.body).toHaveProperty('numeroProcesso');
-  }, 20000); // 20 segundos
+  }, 20000);
 
   it('should generate an excel file', async () => {
     const response = await request(server)
@@ -262,7 +262,7 @@ describe('API Routes', () => {
     expect(response.header['content-type']).toBe(
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     );
-  }, 20000); // 20 segundos
+  }, 20000);
 
   it('should paginate movements', async () => {
     const response = await request(server)
@@ -282,6 +282,6 @@ describe('API Routes', () => {
       'Movimento 1 - 01/01/2023',
       'Movimento 2 - 02/01/2023',
     ]);
-  }, 20000); // 20 segundos
+  }, 20000);
 });
 ```
