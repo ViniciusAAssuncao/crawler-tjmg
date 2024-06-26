@@ -72,7 +72,7 @@ npm install
 ### Inicie o Servidor
 
 ```bash
-npm start
+npm run start dev
 ```
 
 ## Endpoints
