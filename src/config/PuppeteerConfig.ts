@@ -1,5 +1,5 @@
 const PuppeteerConfig = {
-    headless: true,
+  headless: true,
 };
 
 export default PuppeteerConfig;
