@@ -6,7 +6,7 @@ const router = Router();
 const crawlerController = new CrawlerController();
 const apiController = new ApiController();
 
-router.get('/process/:processNumber', (req: Request, res: Response) =>
+router.get('/process/:dynamicParam', (req: Request, res: Response) =>
   crawlerController.getProcessDetails(req, res),
 );
 

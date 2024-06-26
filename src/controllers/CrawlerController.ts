@@ -11,14 +11,14 @@ class CrawlerController {
 
   public async getProcessDetails(req: Request, res: Response) {
     try {
-      const { processNumber } = req.params;
-      if (typeof processNumber !== 'string') {
-        res.status(400).json({ message: 'Número do processo inválido' });
+      const { dynamicParam } = req.params;
+      if (typeof dynamicParam !== 'string') {
+        res.status(400).json({ message: 'Parâmetro dinâmico inválido' });
         return;
       }
 
       const details =
-        await this.crawlerService.fetchProcessDetails(processNumber);
+        await this.crawlerService.fetchProcessDetails(dynamicParam);
       if (details) {
         res.status(200).json(details);
       } else {
