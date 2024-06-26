@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import Logger from '../utils/Logger';
 import ApiService from '../services/ApiService';
+import Logger from '../utils/Logger';
 
 class ApiController {
   private apiService: ApiService;
@@ -23,7 +23,7 @@ class ApiController {
       );
       res.send(excelFile);
     } catch (error) {
-      Logger.error(error);
+      Logger.error((error as Error).message);
       res.status(500).json({ message: 'Erro ao gerar o arquivo Excel' });
     }
   }
@@ -38,7 +38,7 @@ class ApiController {
       );
       res.status(200).json(paginatedMovements);
     } catch (error) {
-      Logger.error(error);
+      Logger.error((error as Error).message);
       res.status(500).json({ message: 'Erro ao paginar os movimentos' });
     }
   }
