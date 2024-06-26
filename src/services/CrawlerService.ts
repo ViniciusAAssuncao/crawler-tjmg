@@ -1,45 +1,48 @@
-import puppeteer, { Browser, Page, Target } from 'puppeteer';
+import puppeteer, { Browser, Page } from 'puppeteer';
 import PuppeteerConfig from '../config/PuppeteerConfig';
 import Logger from '../utils/Logger';
 import { ProcessDetails } from '../interfaces/ProcessDetails';
 
 class CrawlerService {
   private browser!: Browser;
+  private page!: Page;
+
+  constructor() {
+    this.init();
+  }
 
   private async init() {
     this.browser = await puppeteer.launch(PuppeteerConfig);
-    Logger.info('Navegador iniciado');
+    this.page = await this.browser.newPage();
+    Logger.info('Navegador iniciado e nova aba aberta');
   }
 
   public async fetchProcessDetails(
     processNumber: string,
   ): Promise<ProcessDetails | null> {
     try {
-      await this.init();
-      const page: Page = await this.browser.newPage();
-      Logger.info('Nova aba aberta');
-      await page.goto(
+      await this.page.goto(
         'https://pje-consulta-publica.tjmg.jus.br/pje/ConsultaPublica/listView.seam',
       );
       Logger.info('Página carregada');
 
-      await page.waitForSelector(
+      await this.page.waitForSelector(
         '#fPP\\:numProcesso-inputNumeroProcessoDecoration\\:numProcesso-inputNumeroProcesso',
       );
-      await page.type(
+      await this.page.type(
         '#fPP\\:numProcesso-inputNumeroProcessoDecoration\\:numProcesso-inputNumeroProcesso',
         processNumber,
       );
       Logger.info('Número do processo inserido');
 
-      await page.waitForSelector('#fPP\\:searchProcessos');
-      await page.click('#fPP\\:searchProcessos');
+      await this.page.waitForSelector('#fPP\\:searchProcessos');
+      await this.page.click('#fPP\\:searchProcessos');
       Logger.info('Botão "Pesquisar" clicado');
 
-      await page.waitForSelector('td.rich-table-cell');
+      await this.page.waitForSelector('td.rich-table-cell');
       Logger.info('Tabela de resultados carregada');
 
-      await page.evaluate(() => {
+      await this.page.evaluate(() => {
         const link = document.querySelector(
           'td.rich-table-cell a[title="Ver Detalhes"]',
         );
@@ -47,20 +50,10 @@ class CrawlerService {
       });
       Logger.info('Link "Ver Detalhes" clicado');
 
-      const newPagePromise: Promise<Page> = new Promise((resolve, reject) => {
-        this.browser.once('targetcreated', async (target: Target) => {
-          const newPage = await target.page();
-          newPage
-            ? resolve(newPage)
-            : reject(new Error('Nova página não encontrada'));
-        });
-      });
-
-      const newPage: Page = await newPagePromise;
-      await newPage.waitForSelector('body');
+      await this.page.waitForSelector('body');
       Logger.info('Nova aba carregada');
 
-      const processDetails: ProcessDetails = await newPage.evaluate(() => {
+      const processDetails: ProcessDetails = await this.page.evaluate(() => {
         const getFieldText = (selector: string): string | null => {
           const element = document.querySelector(selector);
           return element ? element.textContent?.trim() || null : null;
@@ -89,8 +82,8 @@ class CrawlerService {
         };
       });
 
-      const extractMovements = async (page: Page): Promise<string[]> => {
-        const movements = await page.evaluate(() => {
+      const extractMovements = async (): Promise<string[]> => {
+        const movements = await this.page.evaluate(() => {
           const rows = document.querySelectorAll(
             'table#j_id134\\:processoEvento tbody tr',
           );
@@ -106,25 +99,7 @@ class CrawlerService {
         return movements;
       };
 
-      const delay = (ms: number) =>
-        new Promise((resolve) => setTimeout(resolve, ms));
-
-      const changeMovementPage = async (page: Page, pageIndex: number) => {
-        await page.evaluate((index) => {
-          const input = document.querySelector<HTMLInputElement>(
-            'input#j_id134\\:j_id531\\:j_id532Input',
-          );
-          if (input) {
-            input.value = index.toString();
-            input.dispatchEvent(new Event('change', { bubbles: true }));
-          }
-        }, pageIndex);
-        await page.waitForSelector('span#j_id134\\:processoEventoMessages', {
-          hidden: true,
-        });
-      };
-
-      const totalPages = await newPage.evaluate(() => {
+      const totalPages = await this.page.evaluate(() => {
         const rightNumElement = document.querySelector(
           'td.rich-inslider-right-num',
         );
@@ -135,11 +110,24 @@ class CrawlerService {
 
       const allMovements: string[] = [];
       for (let i = 1; i <= totalPages; i++) {
-        const movements = await extractMovements(newPage);
+        const movements = await extractMovements();
         allMovements.push(...movements);
         if (i < totalPages) {
-          await delay(2000);
-          await changeMovementPage(newPage, i + 1);
+          await this.page.evaluate((index) => {
+            const input = document.querySelector<HTMLInputElement>(
+              'input#j_id134\\:j_id531\\:j_id532Input',
+            );
+            if (input) {
+              input.value = index.toString();
+              input.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+          }, i + 1);
+          await this.page.waitForSelector(
+            'span#j_id134\\:processoEventoMessages',
+            {
+              hidden: true,
+            },
+          );
         }
       }
 
@@ -153,11 +141,6 @@ class CrawlerService {
     } catch (error) {
       Logger.error((error as Error).message);
       return null;
-    } finally {
-      if (this.browser) {
-        await this.browser.close();
-        Logger.info('Navegador fechado');
-      }
     }
   }
 }
