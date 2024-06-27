@@ -85,7 +85,7 @@ class CrawlerService {
     const getFieldValue = (label: string) =>
       detailsPage(`label:contains("${label}")`)
         .closest('.propertyView')
-        .find('.value .col-sm-12')
+        .find('.value')
         .text()
         .trim();
 
