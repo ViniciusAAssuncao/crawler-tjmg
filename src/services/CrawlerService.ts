@@ -1,164 +1,123 @@
-import puppeteer, { Browser, Page, Target } from 'puppeteer';
-import PuppeteerConfig from '../config/PuppeteerConfig';
+import cheerio from 'cheerio';
 import Logger from '../utils/Logger';
 import { ProcessDetails } from '../interfaces/ProcessDetails';
+import axios, { AxiosInstance } from 'axios';
 
 class CrawlerService {
-  private browser!: Browser;
+  private readonly axiosInstance: AxiosInstance;
+  private readonly PJE_HEADERS = {
+    'User-Agent':
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:127.0) Gecko/20100101 Firefox/127.0',
+    Accept: '*/*',
+    'Accept-Language': 'pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3',
+    'Accept-Encoding': 'gzip, deflate, br, zstd',
+    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+    Connection: 'keep-alive',
+    'Sec-Fetch-Dest': 'empty',
+    'Sec-Fetch-Mode': 'cors',
+    'Sec-Fetch-Site': 'same-origin',
+    'Sec-GPC': '1',
+  };
 
-  private async init() {
-    this.browser = await puppeteer.launch(PuppeteerConfig);
-    Logger.info('Navegador iniciado');
+  constructor() {
+    this.axiosInstance = axios.create({
+      baseURL: 'https://pje-consulta-publica.tjmg.jus.br/pje/ConsultaPublica',
+      headers: this.PJE_HEADERS,
+      maxRedirects: 0,
+    });
+  }
+
+  private async getSessionCookies(): Promise<string> {
+    const response = await this.axiosInstance.get('/listView.seam', {
+      validateStatus: (status) => status >= 200 && status < 400,
+    });
+    const cookies = response.headers['set-cookie'];
+    return cookies?.join('; ') || '';
   }
 
   public async fetchProcessDetails(
-    processNumber: string,
+    numeroProcesso: string,
   ): Promise<ProcessDetails | null> {
     try {
-      await this.init();
-      const page: Page = await this.browser.newPage();
-      Logger.info('Nova aba aberta');
-      await page.goto(
-        'https://pje-consulta-publica.tjmg.jus.br/pje/ConsultaPublica/listView.seam',
+      const cookies = await this.getSessionCookies();
+      const body = this.createRequestBody(numeroProcesso);
+
+      const response = await this.axiosInstance.post('/listView.seam', body, {
+        headers: { ...this.PJE_HEADERS, Cookie: cookies },
+        maxRedirects: 0,
+        validateStatus: (status) => status >= 200 && status < 400,
+      });
+
+      const processId = this.extractProcessId(response.data);
+      if (!processId) throw new Error('ID do processo não encontrado');
+
+      const detailsResponse = await this.axiosInstance.get(
+        `/DetalheProcessoConsultaPublica/listView.seam?ca=${processId}`,
+        {
+          headers: { ...this.PJE_HEADERS, Cookie: cookies },
+          maxRedirects: 0,
+          validateStatus: (status) => status >= 200 && status < 400,
+        },
       );
-      Logger.info('Página carregada');
 
-      await page.waitForSelector(
-        '#fPP\\:numProcesso-inputNumeroProcessoDecoration\\:numProcesso-inputNumeroProcesso',
-      );
-      await page.type(
-        '#fPP\\:numProcesso-inputNumeroProcessoDecoration\\:numProcesso-inputNumeroProcesso',
-        processNumber,
-      );
-      Logger.info('Número do processo inserido');
-
-      await page.waitForSelector('#fPP\\:searchProcessos');
-      await page.click('#fPP\\:searchProcessos');
-      Logger.info('Botão "Pesquisar" clicado');
-
-      await page.waitForSelector('td.rich-table-cell');
-      Logger.info('Tabela de resultados carregada');
-
-      await page.evaluate(() => {
-        const link = document.querySelector(
-          'td.rich-table-cell a[title="Ver Detalhes"]',
-        );
-        if (link) (link as HTMLElement).click();
-      });
-      Logger.info('Link "Ver Detalhes" clicado');
-
-      const newPagePromise: Promise<Page> = new Promise((resolve, reject) => {
-        this.browser.once('targetcreated', async (target: Target) => {
-          const newPage = await target.page();
-          newPage
-            ? resolve(newPage)
-            : reject(new Error('Nova página não encontrada'));
-        });
-      });
-
-      const newPage: Page = await newPagePromise;
-      await newPage.waitForSelector('body');
-      Logger.info('Nova aba carregada');
-
-      const processDetails: ProcessDetails = await newPage.evaluate(() => {
-        const getFieldText = (selector: string): string | null => {
-          const element = document.querySelector(selector);
-          return element ? element.textContent?.trim() || null : null;
-        };
-
-        return {
-          numeroProcesso: getFieldText(
-            'span#j_id134\\:processoTrfViewView\\:j_id140 .value .col-sm-12',
-          ),
-          dataDistribuicao: getFieldText(
-            'span#j_id134\\:processoTrfViewView\\:j_id152 .value',
-          ),
-          classeJudicial: getFieldText(
-            'span#j_id134\\:processoTrfViewView\\:j_id163 .value',
-          ),
-          assunto: getFieldText(
-            'span#j_id134\\:processoTrfViewView\\:j_id174 .value .col-sm-12',
-          ),
-          jurisdicao: getFieldText(
-            'span#j_id134\\:processoTrfViewView\\:j_id187 .value',
-          ),
-          orgaoJulgador: getFieldText(
-            'span#j_id134\\:processoTrfViewView\\:j_id211 .value',
-          ),
-          movimentos: [],
-        };
-      });
-
-      const extractMovements = async (page: Page): Promise<string[]> => {
-        const movements = await page.evaluate(() => {
-          const rows = document.querySelectorAll(
-            'table#j_id134\\:processoEvento tbody tr',
-          );
-          return Array.from(rows)
-            .map((row) => {
-              const dateElement = row.querySelector(
-                'td.rich-table-cell.text-break.text-left span',
-              );
-              return dateElement ? dateElement.textContent?.trim() : null;
-            })
-            .filter((text): text is string => text !== null);
-        });
-        return movements;
-      };
-
-      const delay = (ms: number) =>
-        new Promise((resolve) => setTimeout(resolve, ms));
-
-      const changeMovementPage = async (page: Page, pageIndex: number) => {
-        await page.evaluate((index) => {
-          const input = document.querySelector<HTMLInputElement>(
-            'input#j_id134\\:j_id531\\:j_id532Input',
-          );
-          if (input) {
-            input.value = index.toString();
-            input.dispatchEvent(new Event('change', { bubbles: true }));
-          }
-        }, pageIndex);
-        await page.waitForSelector('span#j_id134\\:processoEventoMessages', {
-          hidden: true,
-        });
-      };
-
-      const totalPages = await newPage.evaluate(() => {
-        const rightNumElement = document.querySelector(
-          'td.rich-inslider-right-num',
-        );
-        return rightNumElement
-          ? parseInt(rightNumElement.textContent || '1', 10)
-          : 1;
-      });
-
-      const allMovements: string[] = [];
-      for (let i = 1; i <= totalPages; i++) {
-        const movements = await extractMovements(newPage);
-        allMovements.push(...movements);
-        if (i < totalPages) {
-          await delay(2000);
-          await changeMovementPage(newPage, i + 1);
-        }
-      }
-
-      processDetails.movimentos = allMovements.sort((a, b) => {
-        const dateA = new Date(a.split(' - ')[0]);
-        const dateB = new Date(b.split(' - ')[0]);
-        return dateB.getTime() - dateA.getTime();
-      });
-
-      return processDetails;
+      Logger.info('Página de detalhes carregada');
+      return this.parseProcessDetails(detailsResponse.data);
     } catch (error) {
       Logger.error((error as Error).message);
       return null;
-    } finally {
-      if (this.browser) {
-        await this.browser.close();
-        Logger.info('Navegador fechado');
-      }
     }
+  }
+
+  private createRequestBody(numeroProcesso: string): string {
+    return `AJAXREQUEST=_viewRoot&fPP:numProcesso-inputNumeroProcessoDecoration:numProcesso-inputNumeroProcesso=${numeroProcesso}&mascaraProcessoReferenciaRadio=on&fPP:j_id150:processoReferenciaInput=&fPP:dnp:nomeParte=&fPP:j_id168:nomeSocial=&fPP:j_id177:alcunha=&fPP:j_id186:nomeAdv=&fPP:j_id195:classeProcessualProcessoHidden=&tipoMascaraDocumento=on&fPP:dpDec:documentoParte=&fPP:Decoration:numeroOAB=&fPP:Decoration:j_id230=&fPP:Decoration:estadoComboOAB=org.jboss.seam.ui.NoSelectionConverter.noSelectionValue&fPP=fPP&autoScroll=&javax.faces.ViewState=j_id1&fPP:j_id236=fPP:j_id236&AJAX:EVENTS_COUNT`;
+  }
+
+  private extractProcessId(responseData: string): string | null {
+    const regex =
+      /openPopUp\('Consulta pública','\/pje\/ConsultaPublica\/DetalheProcessoConsultaPublica\/listView\.seam\?ca=([a-f0-9]+)'\)/;
+    const match = regex.exec(responseData);
+    return match && match.length > 1 ? match[1] : null;
+  }
+
+  private parseProcessDetails(pageContent: string): ProcessDetails {
+    const detailsPage = cheerio.load(pageContent);
+
+    const getFieldValue = (label: string) =>
+      detailsPage(`label:contains("${label}")`)
+        .closest('.propertyView')
+        .find('.value')
+        .text()
+        .trim();
+
+    const processDetails: ProcessDetails = {
+      numeroProcesso: getFieldValue('Número Processo'),
+      dataDistribuicao: getFieldValue('Data da Distribuição'),
+      classeJudicial: getFieldValue('Classe Judicial'),
+      assunto: getFieldValue('Assunto'),
+      jurisdicao: getFieldValue('Jurisdição'),
+      orgaoJulgador: getFieldValue('Órgão Julgador'),
+      movimentos: this.extractMovements(pageContent),
+    };
+
+    return processDetails;
+  }
+
+  private extractMovements(pageContent: string): string[] {
+    const movements: string[] = [];
+    const page = cheerio.load(pageContent);
+    page('table.rich-table tbody tr').each((_, element) => {
+      const movementElement = page(element).find(
+        'td.rich-table-cell.text-break.text-left span',
+      );
+      if (movementElement.length) {
+        movements.push(movementElement.text().trim());
+      }
+    });
+    return movements.sort(
+      (a, b) =>
+        new Date(b.split(' - ')[0]).getTime() -
+        new Date(a.split(' - ')[0]).getTime(),
+    );
   }
 }
 
